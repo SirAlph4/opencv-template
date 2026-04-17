@@ -1,0 +1,43 @@
+name        = "opencv-template"
+version     = "1.0.0"
+description = "OpenCV + MediaPipe project scaffold"
+
+[[variables]]
+name        = "project_name"
+description = "Project name"
+default     = "MyOpenCVProject"
+
+[[variables]]
+name        = "author"
+description = "Your name"
+default     = ""
+
+[[variables]]
+name        = "camera_width"
+description = "Camera capture width"
+type        = "choice"
+choices     = ["1920", "1280", "640"]
+default     = "1920"
+
+[[variables]]
+name        = "camera_height"
+description = "Camera capture height"
+type        = "choice"
+choices     = ["1080", "720", "480"]
+default     = "1080"
+
+[[variables]]
+name        = "use_mediapipe"
+description = "Include MediaPipe hand tracking?"
+type        = "bool"
+default     = "true"
+
+[[conditionals]]
+exclude = "{{project_name}}/src/core/tracker.py"
+when    = "use_mediapipe == false"
+
+[hooks]
+post_create = [
+    "git init",
+    "cp .env.example .env"
+]
