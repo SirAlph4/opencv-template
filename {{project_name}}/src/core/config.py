@@ -1,4 +1,4 @@
-# {{ project_name }} — {{ author }}
+# SignLanguageCV — SirAlph4
 import os
 import cv2
 import numpy as np
@@ -11,8 +11,8 @@ os.environ["OPENCV_VIDEOIO_V4L_RANGE_NORMALIZED"] = "0"
 CWD     = Path.cwd()
 DEVICE  = int(os.getenv("CAMERA_DEVICE", 0))
 BACKEND = cv2.CAP_V4L2
-WIDTH   = int(os.getenv("CAMERA_WIDTH",  {{ camera_width }}))
-HEIGHT  = int(os.getenv("CAMERA_HEIGHT", {{ camera_height }}))
+WIDTH   = int(os.getenv("CAMERA_WIDTH",  1920))
+HEIGHT  = int(os.getenv("CAMERA_HEIGHT", 1080))
 FPS     = 30
 FOURCC  = cv2.VideoWriter.fourcc(*"MJPG")
 DRAIN_COUNT = 10

@@ -11,14 +11,14 @@ from src.core.config import (
 )
 from src.core.tracker import HandState, landmarks_to_pixels, get_fingertips
 from src.utils.drawing import draw_skeleton, draw_hand_bbox, draw_status
-from src.utils.fs import euclidean_distance, smart_rotate_folder
+from src.utils.fs import euclidean_distance, next_session_dir
 
 
 class CollectMode:
   NAME = "COLLECT  [SPACE = next class]"
 
   def __init__(self) -> None:
-    self.data_dir = smart_rotate_folder("image_data/data")
+    self.data_dir = next_session_dir("image_data")
     self._make_class_dirs()
     self.class_idx = 0
     self.counter = 0
@@ -36,12 +36,33 @@ class CollectMode:
 
   def process(self, frame: np.ndarray) -> None:
     self.counter += 1
-    if HandState.result is None or not HandState.result.hand_landmarks:
+
+    if HandState.result is None:
       self._draw_hud(frame)
       return
-    for i, hand_landmarks in enumerate(HandState.result.hand_landmarks):
+
+    hand_landmarks_list = HandState.result.hand_landmarks or []
+    handedness_list = HandState.result.handedness or []
+    count = min(len(hand_landmarks_list), len(handedness_list))
+
+    if count == 0:
+      self._draw_hud(frame)
+      return
+
+    for i in range(count):
+      hand_landmarks = hand_landmarks_list[i]
+
       pixel_pts = landmarks_to_pixels(hand_landmarks)
-      hand_info = HandState.result.handedness[i][0]
+
+      if i >= len(handedness_list):
+        continue
+
+      if not handedness_list[i]:
+        print(handedness_list[i])
+        continue
+
+      hand_info = handedness_list[i][0]
+
       label = hand_info.category_name
       score = int(hand_info.score * 100)
       draw_skeleton(frame, pixel_pts)
@@ -71,22 +92,29 @@ class CollectMode:
     self.image_cnt += 1
 
   def _draw_hud(self, frame: np.ndarray) -> None:
-    remaining = COLLECTION_DELAY - self.counter
-    if remaining > 0:
-      text = f"'{self.current_class}' starts in {remaining // 30 + 1}s"
-    elif self.image_cnt < IMAGES_PER_CLASS:
-      text = f"Recording '{self.current_class}': {self.image_cnt}/{IMAGES_PER_CLASS}"
+    if self.class_idx >= len(CLASSES):
+      text = "All classes done. Switch mode."
     else:
-      text = f"Done! SPACE for next  ({self.class_idx + 1}/{len(CLASSES)})"
+      remaining = COLLECTION_DELAY - self.counter
+
+      if remaining > 0:
+        text = f"'{self.current_class}' starts in {remaining // 30 + 1}s"
+
+      elif self.image_cnt < IMAGES_PER_CLASS:
+        text = f"Recording '{self.current_class}': {self.image_cnt}/{IMAGES_PER_CLASS}"
+
+      else:
+        text = f"Done! SPACE for next  ({self.class_idx + 1}/{len(CLASSES)})"
     draw_status(frame, text)
 
   def next_class(self) -> bool:
     self.class_idx += 1
     self.counter = 0
     self.image_cnt = 0
+
     if self.class_idx >= len(CLASSES):
       print("[COLLECT] All classes done.")
       return False
-    print(f"[COLLECT] Next: {self.current_class}")
-    return True
 
+    print(f"[COLLECT] Next: {CLASSES[self.class_idx]}")
+    return True
